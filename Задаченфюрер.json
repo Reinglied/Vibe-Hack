@@ -1,0 +1,323 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1168,
+        400
+      ],
+      "id": "5c8ac18f-f99f-4cbe-a4f9-37bf619f9e16",
+      "name": "Schedule Trigger",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Получаем входные данные\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        352
+      ],
+      "id": "9a729f6a-6089-4fbe-9dd0-99b24228b104",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "\n\nТы — аналитик проектов. Перед тобой список проектов и их дедлайнов. Проанализируй, по каким проектам сроки уже прошли (просрочены), а какие нужно сдать сегодня или завтра. По каждому из участников создай персональные сообщения для каждого из участников, которые бы им отправлялись в личные сообещения, а также составь общий краткий отчет, который будет отправлен в общий чат",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        528,
+        368
+      ],
+      "id": "bb2b90fc-6516-4c59-9a19-4550c98d83f4",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        400,
+        576
+      ],
+      "id": "ee7e1acc-9f82-4d9b-8c38-34a28b303fc1",
+      "name": "DeepSeek Chat Model",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "IHZSRxIm6t1gKAj6",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "chat"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        368
+      ],
+      "id": "ceba5789-b49b-4aaf-8a81-b1c342335a65",
+      "name": "Get a chat",
+      "webhookId": "36bed910-859a-4553-a7da-7a0ccc53dfe3",
+      "credentials": {
+        "telegramApi": {
+          "id": "4if8WMazuUnUhhrJ",
+          "name": "Telegram account 4"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://app.teamly.ru/api/v1/ql/content-database/content",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFZERTQSJ9.eyJqdGkiOiIzZDU0YzgzZDYxMjAwMDJkYzJiMjk5OWNhYzBkYTllMzZhMzM4NWNlYWUyOTRmZDcxZDNmNzViOWYwYTZmNTQ0ZDc1ZThmYzRiZTk1ZTk4MiIsImF1ZCI6IjQ2ZmYxYzQ0LTlmOGItNDZjYS1iNGIwLWEwN2U1ZjY4MjdiNiIsInN1YiI6Ijk1ODA4MWRiLWI5NDktNDI3Ni1hMTFiLTMzNmIwYzg0MDIyNyIsImlhdCI6MTc3MzU2NDg1OS44OTE0NTEsIm5iZiI6MTc3MzU2NDg1OS44OTE0NTIsImV4cCI6MTc3MzczNzY1OS44Nzg5NjMsInNjb3BlcyI6WyJleHRlcm5hbCJdLCJhZmkiOiJiY2E2ZDdkNS1lZWMyLTRhOTctYWVhZC02OWU2NGFhNTBmZDYifQ.kma2fQC6uDNjh0DDcQx-iFD-obpJeXMYvrKrHr0YyYGoCB6enoj49OYrTzcb1iEZiqls1SCaKpDtIovTK94CDg"
+            },
+            {
+              "name": "X-Account-Slug",
+              "value": "tigeeeeeeeeeeeeer423"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"query\": {\n    \"__filter\": {\n      \"contentDatabaseId\": \"736f731a-f64a-4122-b2e5-9894d66a0c5b\"\n    },\n    \"id\": true,\n    \"title\": true,\n    \"schemaProperties\": {\n      \"name\": true,\n      \"code\": true\n    },\n    \"content\": {\n      \"article\": {\n        \"id\": true,\n        \"title\": true,\n        \"properties\": {\n          \"properties\": true\n        }\n      }\n    }\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -848,
+        384
+      ],
+      "id": "bece0bf5-dd40-4ef2-896f-7a249eb30331",
+      "name": "Получение всех задач с таск-трекера"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "content",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -608,
+        384
+      ],
+      "id": "e43e5654-74fb-4126-b4bc-20a2eb50a5c5",
+      "name": "Разбиение на конкретные задачи"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5a357d36-1aaa-4eb0-9a15-2f70af65d0db",
+              "leftValue": "={{ $json.article.properties.properties.kqO3 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -384,
+        384
+      ],
+      "id": "46555293-6636-4176-af05-ca31c4c634d6",
+      "name": "Фильтрация по статусу \"задача закрыта\""
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e3eb7f9a-6f5e-4c18-a363-9bf74d7871c1",
+              "leftValue": "={{ $json.article.properties.properties.executionDate.to }}",
+              "rightValue": "={{ $now }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "before"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -128,
+        368
+      ],
+      "id": "58d1930b-6348-46cb-a554-48c3452abf1e",
+      "name": "Фильтрация по прогоревшему дедлайну"
+    },
+    {
+      "parameters": {
+        "useCustomSchema": true,
+        "operation": "getAll"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        512,
+        560
+      ],
+      "id": "176e0954-d6c9-4f66-b5ea-da4495f37869",
+      "name": "Get many rows"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Получение всех задач с таск-трекера",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        []
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Get a chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Получение всех задач с таск-трекера": {
+      "main": [
+        [
+          {
+            "node": "Разбиение на конкретные задачи",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Разбиение на конкретные задачи": {
+      "main": [
+        [
+          {
+            "node": "Фильтрация по статусу \"задача закрыта\"",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Фильтрация по статусу \"задача закрыта\"": {
+      "main": [
+        [
+          {
+            "node": "Фильтрация по прогоревшему дедлайну",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Фильтрация по прогоревшему дедлайну": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "c0f08dc7-b516-48ea-b221-d3e296449ddd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bd32d670d4d5869572e4a467e796bb34a9a2fb89750628cb12d27049dfeab0d2"
+  },
+  "id": "gSzGEDehHXCJYyjB",
+  "tags": []
+}
