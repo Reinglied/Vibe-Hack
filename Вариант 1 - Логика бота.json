@@ -1,0 +1,434 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1168,
+        400
+      ],
+      "id": "5c8ac18f-f99f-4cbe-a4f9-37bf619f9e16",
+      "name": "Schedule Trigger",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Полу// Получаем входные данные\nconst items = $input.all();\n\n// Массив для результата\nconst result = [];\n\n// Обрабатываем каждый элемент\nfor (const item of items) {\n  try {\n    // Получаем данные статьи\n    const article = item.json.article;\n    const properties = article.properties.properties;\n    \n    // Извлекаем нужные поля\n    const id = article.id;\n    const fullName = properties.author?.fullName || '';\n    const title = article.title || properties.title?.text || '';\n    \n    // Извлекаем даты дедлайна\n    let deadlineFrom = '';\n    let deadlineTo = '';\n    \n    if (properties.executionDate) {\n      deadlineFrom = properties.executionDate.from || '';\n      deadlineTo = properties.executionDate.to || '';\n    }\n    \n    // Формируем текст дедлайна\n    let deadlineText = '';\n    if (deadlineFrom && deadlineTo) {\n      deadlineText = `с ${deadlineFrom} по ${deadlineTo}`;\n    } else if (deadlineFrom) {\n      deadlineText = `с ${deadlineFrom}`;\n    } else if (deadlineTo) {\n      deadlineText = `по ${deadlineTo}`;\n    }\n    \n    // Добавляем в результат\n    result.push({\n      id: id,\n      fullName: fullName,\n      deadlineText: deadlineText,\n      title: title,\n      executionDate: {\n        from: deadlineFrom,\n        to: deadlineTo\n      }\n    });\n    \n  } catch (error) {\n    // В случае ошибки пропускаем элемент или добавляем информацию об ошибке\n    console.error('Ошибка обработки элемента:', error);\n  }\n}\n\n// Возвращаем результат\nreturn result;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        352
+      ],
+      "id": "9a729f6a-6089-4fbe-9dd0-99b24228b104",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Напиши весёлое гневное сообщение о том, что дедлайн задачи просрочен. Укажи в сообщении tgId участника ({{ $json.tgid }}) и название задачи \"{{ $json.title }}\". Сообщение должно быть эмоциональным, но дружелюбным.",
+        "options": {
+          "systemMessage": "Ты — помощник, который пишет весёлые гневные сообщения о просроченных задачах. Используй переданные данные задачи."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        832,
+        352
+      ],
+      "id": "bb2b90fc-6516-4c59-9a19-4550c98d83f4",
+      "name": "AI Agent",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://app.teamly.ru/api/v1/ql/content-database/content",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFZERTQSJ9.eyJqdGkiOiIzZDU0YzgzZDYxMjAwMDJkYzJiMjk5OWNhYzBkYTllMzZhMzM4NWNlYWUyOTRmZDcxZDNmNzViOWYwYTZmNTQ0ZDc1ZThmYzRiZTk1ZTk4MiIsImF1ZCI6IjQ2ZmYxYzQ0LTlmOGItNDZjYS1iNGIwLWEwN2U1ZjY4MjdiNiIsInN1YiI6Ijk1ODA4MWRiLWI5NDktNDI3Ni1hMTFiLTMzNmIwYzg0MDIyNyIsImlhdCI6MTc3MzU2NDg1OS44OTE0NTEsIm5iZiI6MTc3MzU2NDg1OS44OTE0NTIsImV4cCI6MTc3MzczNzY1OS44Nzg5NjMsInNjb3BlcyI6WyJleHRlcm5hbCJdLCJhZmkiOiJiY2E2ZDdkNS1lZWMyLTRhOTctYWVhZC02OWU2NGFhNTBmZDYifQ.kma2fQC6uDNjh0DDcQx-iFD-obpJeXMYvrKrHr0YyYGoCB6enoj49OYrTzcb1iEZiqls1SCaKpDtIovTK94CDg"
+            },
+            {
+              "name": "X-Account-Slug",
+              "value": "tigeeeeeeeeeeeeer423"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"query\": {\n    \"__filter\": {\n      \"contentDatabaseId\": \"736f731a-f64a-4122-b2e5-9894d66a0c5b\"\n    },\n    \"id\": true,\n    \"title\": true,\n    \"schemaProperties\": {\n      \"name\": true,\n      \"code\": true\n    },\n    \"content\": {\n      \"article\": {\n        \"id\": true,\n        \"title\": true,\n        \"properties\": {\n          \"properties\": true\n        }\n      }\n    }\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -848,
+        384
+      ],
+      "id": "bece0bf5-dd40-4ef2-896f-7a249eb30331",
+      "name": "Получение всех задач с таск-трекера"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "content",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -608,
+        384
+      ],
+      "id": "e43e5654-74fb-4126-b4bc-20a2eb50a5c5",
+      "name": "Разбиение на конкретные задачи"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5a357d36-1aaa-4eb0-9a15-2f70af65d0db",
+              "leftValue": "={{ $json.article.properties.properties.kqO3 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -384,
+        384
+      ],
+      "id": "46555293-6636-4176-af05-ca31c4c634d6",
+      "name": "Фильтрация по статусу \"задача закрыта\""
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e3eb7f9a-6f5e-4c18-a363-9bf74d7871c1",
+              "leftValue": "={{ $json.article.properties.properties.executionDate.to }}",
+              "rightValue": "={{ $now }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "before"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -128,
+        368
+      ],
+      "id": "58d1930b-6348-46cb-a554-48c3452abf1e",
+      "name": "Фильтрация по прогоревшему дедлайну"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Получаем входные данные из предыдущей ноды\nconst inputData = $input.all();\n\n// Словарь соответствия имен и Telegram ID\nconst tgidMap = {\n  'Смирнов Герман': '@Reinglied',\n  'Афанасова Софья': '@winterhood000',\n  'Мавлюбердинова Ирина': '@Mavliuberdinova',\n  'Бухтеев Алексей': '@ballord',\n  'Alexandrova Adel': '@adel229a'\n};\n\n// Функция для нормализации имени (убираем лишние пробелы)\nfunction normalizeName(name) {\n  if (!name) return '';\n  return name.trim().replace(/\\s+/g, ' ');\n}\n\n// Функция для поиска tgid по имени с учетом частичного совпадения\nfunction findTgId(fullName) {\n  if (!fullName) return null;\n  \n  const normalizedName = normalizeName(fullName);\n  \n  // Прямое совпадение\n  if (tgidMap[normalizedName]) {\n    return tgidMap[normalizedName];\n  }\n  \n  // Поиск по частичному совпадению (если имя содержит фамилию или часть)\n  for (const [name, tgid] of Object.entries(tgidMap)) {\n    if (normalizedName.includes(name) || name.includes(normalizedName)) {\n      return tgid;\n    }\n  }\n  \n  return null;\n}\n\n// Обрабатываем каждый элемент входных данных\nlet processedData = [];\n\n// Проверяем, является ли входной массив\nif (Array.isArray(inputData)) {\n  processedData = inputData.map(item => {\n    const data = item.json || item;\n    \n    // Создаем копию объекта с добавленным tgid\n    return {\n      ...data,\n      tgid: findTgId(data.fullName)\n    };\n  });\n} else {\n  // Если пришел одиночный объект\n  const data = inputData.json || inputData;\n  processedData = [{\n    ...data,\n    tgid: findTgId(data.fullName)\n  }];\n}\n\n// Фильтруем результаты (опционально - можно оставить только те, где есть tgid)\n// Раскомментируйте следующую строку, если хотите оставить только записи с найденными tgid\n// processedData = processedData.filter(item => item.tgid !== null);\n\n// Добавляем статистику обработки\nconst statistics = {\n  totalRecords: processedData.length,\n  recordsWithTgid: processedData.filter(item => item.tgid !== null).length,\n  recordsWithoutTgid: processedData.filter(item => item.tgid === null).length\n};\n\nconsole.log('Статистика обработки:', statistics);\n\n// Возвращаем результат\nreturn processedData;ll();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        352
+      ],
+      "id": "d0c56088-6899-4c6b-8483-d86b50e8995a",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "chatId": "889890909",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1392,
+        352
+      ],
+      "id": "ceba5789-b49b-4aaf-8a81-b1c342335a65",
+      "name": "Send a text message",
+      "webhookId": "36bed910-859a-4553-a7da-7a0ccc53dfe3",
+      "alwaysOutputData": false,
+      "notesInFlow": false,
+      "credentials": {
+        "telegramApi": {
+          "id": "eysQVNppa9X3eeVe",
+          "name": "Telegram account 5"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        816,
+        544
+      ],
+      "id": "c1ba6e77-5b02-4998-8ddb-eb6990cf2ed1",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "mFxHpUTZZtGJtwkU",
+          "name": "OpenRouter account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Получаем все входные данные (массив элементов)\nconst items = $input.all();\n\n// Текущая дата в UTC\nconst now = new Date();\nconst currentYear = now.getUTCFullYear();\nconst currentMonth = now.getUTCMonth(); // 0-11\n\n// Вычисляем предыдущий месяц\nlet prevYear = currentYear;\nlet prevMonth = currentMonth - 1;\nif (prevMonth < 0) {\n  prevMonth = 11;\n  prevYear = currentYear - 1;\n}\n\n/**\n * Извлекает год, месяц и день из строки даты (UTC)\n * @param {string} dateStr - строка с датой (например, \"2024-04-03\" или \"2026-02-24T00:00:00\")\n * @returns {{year: number, month: number, day: number} | null} - объект с годом, месяцем, днём или null\n */\nfunction getDatePartsFromString(dateStr) {\n  if (!dateStr) return null;\n  const d = new Date(dateStr);\n  if (isNaN(d.getTime())) return null;\n  return {\n    year: d.getUTCFullYear(),\n    month: d.getUTCMonth(),\n    day: d.getUTCDate()\n  };\n}\n\n// Фильтруем записи и удаляем ненужное поле\nconst result = items\n  .map(item => item.json)                     // извлекаем полезные данные\n  .filter(record => {\n    // Проверяем наличие даты дедлайна\n    const dateStr = record.executionDate?.to;\n    if (!dateStr) return false;\n    const parts = getDatePartsFromString(dateStr);\n    if (!parts) return false;\n\n    // Условие: год и месяц совпадают с предыдущим месяцем И день <= 20\n    return parts.year === prevYear &&\n           parts.month === prevMonth &&\n           parts.day <= 20;\n  })\n  .map(record => {\n    // Удаляем поле overdueMessage (если оно есть)\n    const { overdueMessage, ...cleanRecord } = record;\n    return cleanRecord;\n  });\n\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        352
+      ],
+      "id": "092c210c-9ee7-43d8-b2b0-9de464a38b4c",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "chatId": "-1003241806112",
+        "text": "={{ $('AI Agent').item.json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1616,
+        352
+      ],
+      "id": "cc4287d0-34d5-4ea1-b1bb-b014518adb46",
+      "name": "Send a text message1",
+      "webhookId": "36bed910-859a-4553-a7da-7a0ccc53dfe3",
+      "alwaysOutputData": false,
+      "notesInFlow": false,
+      "credentials": {
+        "telegramApi": {
+          "id": "eysQVNppa9X3eeVe",
+          "name": "Telegram account 5"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Получаем входные данные (может быть массивом или одиночным объектом)\nconst inputData = $input.all();\n\n// Функция для получения или создания хранилища данных\nfunction getDataStore() {\n  // Используем статическую переменную для хранения данных между запусками\n  if (!getDataStore.cache) {\n    getDataStore.cache = [];\n  }\n  return getDataStore.cache;\n}\n\n// Функция для добавления новых записей\nfunction addRecords(existingRecords, newRecords) {\n  const updatedRecords = [...existingRecords];\n  const existingIds = new Set(existingRecords.map(r => r.id));\n  \n  for (const record of newRecords) {\n    const id = record.id || record.json?.id;\n    const output = record.output || record.json?.output;\n    \n    // Проверяем, есть ли уже такая запись\n    if (id && output && !existingIds.has(id)) {\n      updatedRecords.push({ id, output });\n      existingIds.add(id);\n    }\n  }\n  \n  return updatedRecords;\n}\n\n// Преобразуем входные данные в массив записей\nlet newEntries = [];\n\nif (Array.isArray(inputData)) {\n  // Если входные данные - массив, обрабатываем каждый элемент\n  for (const item of inputData) {\n    const jsonData = item.json || item;\n    if (jsonData.output) {\n      // Если это уже готовая запись с output\n      newEntries.push({\n        id: jsonData.id || jsonData.taskId || `task_${Date.now()}_${Math.random()}`,\n        output: jsonData.output\n      });\n    } else if (jsonData.tgid && jsonData.title) {\n      // Если нужно сформировать output из tgid и title\n      const output = `${jsonData.tgid}, ну что за шутки! Дедлайн по задаче \"${jsonData.title}\" уже в прошлом, а ты всё ещё в раздумьях? 😅 Срочно берись за дело, иначе презентация превратится в комедию ожиданий! Давай, покажи нам, что ты — мастер тайм-менеджмента, а не мастер затягивания! Вперёд, герой! 🚀🔥`;\n      \n      newEntries.push({\n        id: jsonData.id || jsonData.taskId || `task_${Date.now()}_${Math.random()}`,\n        output: output\n      });\n    }\n  }\n} else {\n  // Если одиночный объект\n  const jsonData = inputData.json || inputData;\n  if (jsonData.output) {\n    newEntries.push({\n      id: jsonData.id || jsonData.taskId || `task_${Date.now()}_${Math.random()}`,\n      output: jsonData.output\n    });\n  } else if (jsonData.tgid && jsonData.title) {\n    const output = `${jsonData.tgid}, ну что за шутки! Дедлайн по задаче \"${jsonData.title}\" уже в прошлом, а ты всё ещё в раздумьях? 😅 Срочно берись за дело, иначе презентация превратится в комедию ожиданий! Давай, покажи нам, что ты — мастер тайм-менеджмента, а не мастер затягивания! Вперёд, герой! 🚀🔥`;\n    \n    newEntries.push({\n      id: jsonData.id || jsonData.taskId || `task_${Date.now()}_${Math.random()}`,\n      output: output\n    });\n  }\n}\n\n// Получаем существующее хранилище и добавляем новые записи\nconst dataStore = getDataStore();\nconst updatedDataStore = addRecords(dataStore, newEntries);\n\n// Обновляем кэш\ngetDataStore.cache = updatedDataStore;\n\n// Возвращаем всю таблицу\nreturn updatedDataStore.map(record => ({\n  id: record.id,\n  output: record.output\n}));\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        352
+      ],
+      "id": "b4920248-478b-4232-9aec-4d04475170aa",
+      "name": "Code in JavaScript4"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Получение всех задач с таск-трекера",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Получение всех задач с таск-трекера": {
+      "main": [
+        [
+          {
+            "node": "Разбиение на конкретные задачи",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Разбиение на конкретные задачи": {
+      "main": [
+        [
+          {
+            "node": "Фильтрация по статусу \"задача закрыта\"",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Фильтрация по статусу \"задача закрыта\"": {
+      "main": [
+        [
+          {
+            "node": "Фильтрация по прогоревшему дедлайну",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Фильтрация по прогоревшему дедлайну": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f8423fee-0499-485c-883c-e631ba6e8767",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bd32d670d4d5869572e4a467e796bb34a9a2fb89750628cb12d27049dfeab0d2"
+  },
+  "id": "gSzGEDehHXCJYyjB",
+  "tags": []
+}

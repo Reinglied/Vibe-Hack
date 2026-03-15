@@ -1,0 +1,748 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "fieldToSplitOut": "content",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        864,
+        -320
+      ],
+      "id": "dee04ace-b41d-4201-86ca-e61635caa5d3",
+      "name": "Разбиение на конкретные задачи"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5a357d36-1aaa-4eb0-9a15-2f70af65d0db",
+              "leftValue": "={{ $json.article.properties.properties.kqO3 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1088,
+        -320
+      ],
+      "id": "700b9c8b-44cb-4033-ad6f-f4c54feca0fc",
+      "name": "Фильтрация по статусу \"задача закрыта\""
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e3eb7f9a-6f5e-4c18-a363-9bf74d7871c1",
+              "leftValue": "={{ $json.article.properties.properties.executionDate.to }}",
+              "rightValue": "={{ $now }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "before"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1312,
+        -320
+      ],
+      "id": "b5f29d38-be0c-402a-a842-cbbc3b087fcd",
+      "name": "Фильтрация по прогоревшему дедлайну"
+    },
+    {
+      "parameters": {
+        "jsCode": "const today = new Date();\n\n// Наша мини-БД: добавляй сюда всех коллег/участников хакатона\nconst usersDb = {\n  \"Смирнов Герман\": {\n    tg_username: \"Reinglied\",\n    tg_group_id: \"-5043324552\",\n    dossier: \"Студент магистратуры ВШЭ по ИИ. Пилит архитектуру для LMS, носит усы. Работает в корпобразовании.\"\n  },\n  \"Иванов Ива\": { // Замени на реальное имя из Teamly\n    tg_username: \"ivan_hacker\",\n    tg_group_id: \"-5043324552\",\n    dossier: \"Фронтендер, фанат React. Любит пить раф на миндальном, постоянно забывает закрыть div. Боится CSS-анимаций.\"\n  },\n  \"Петров Алексей\": { // Замени на реальное имя из Teamly\n    tg_username: \"alex_design\",\n    tg_group_id: \"-5043324552\",\n    dossier: \"Дизайнер, живет в Figma. Плачет, когда видит неровные отступы. Заставляет всех использовать шрифт Inter.\"\n  }\n};\n\nfor (let item of $input.all()) {\n  const deadlineStr = item.json.article?.properties?.properties?.executionDate?.to;\n  let daysOverdue = 0;\n  let wantedLevel = 0;\n\n  if (deadlineStr) {\n    const deadlineDate = new Date(deadlineStr);\n    if (today > deadlineDate) {\n      const diffTime = Math.abs(today - deadlineDate);\n      daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));\n      \n      if (daysOverdue <= 2) wantedLevel = 1;\n      else if (daysOverdue <= 5) wantedLevel = 2;\n      else wantedLevel = 3;\n    }\n  }\n\n  // Получаем имя автора задачи ИЗ TEAMLY\n  const authorName = item.json.article?.properties?.properties?.author?.fullName || \"Неизвестный\";\n\n  item.json.days_overdue = daysOverdue;\n  item.json.wanted_level = wantedLevel;\n  item.json.target_name = authorName;\n\n  // Ищем юзера в нашей базе\n  const userObj = usersDb[authorName];\n\n  if (userObj) {\n    // Если нашли — подтягиваем его личные данные\n    item.json.dossier = userObj.dossier;\n    item.json.target_tg_username = userObj.tg_username;\n    item.json.target_tg_group = userObj.tg_group_id;\n  } else {\n    // ЗАГЛУШКА: если задачи висят на ком-то, кого нет в БД\n    item.json.dossier = \"Скрытный сотрудник без досье. Напомни ему о задаче сухо, но максимально жестко.\";\n    item.json.target_tg_username = \"all\"; // Или оставь пустым\n    item.json.target_tg_group = \"-5043324552\"; // ID общего чата\n  }\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1648,
+        -336
+      ],
+      "id": "68255fc3-a978-4f5a-acfa-32c09036744c",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "jz1RBJScou9cidP8",
+          "mode": "list",
+          "cachedResultName": "TG MSGs",
+          "cachedResultUrl": "/projects/zgjvLtjx21oAbUTV/datatables/jz1RBJScou9cidP8"
+        },
+        "returnAll": true,
+        "orderBy": true,
+        "orderByColumn": "id",
+        "orderByDirection": "ASC"
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        288,
+        -320
+      ],
+      "id": "8d7bb4ee-ed33-4774-a5ad-aa1e202f732a",
+      "name": "Получить историю чата"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Получаем все строки из базы\nconst rows = $input.all();\n\n// 2. Форматируем каждое сообщение\nconst formattedMessages = rows.map(item => {\n  // Берем username. Если у пользователя нет юзернейма (бывает в ТГ), берем имя (first_name)\n  const name = item.json.username || item.json.first_name || 'Аноним';\n  \n  // Берем текст сообщения из правильной колонки message_text\n  const message = item.json.message_text || '[Пустое сообщение/Стикер]';\n  \n  return `${name}: ${message}`;\n});\n\n// 3. Склеиваем всё в одну строку с переносами\nconst chatContext = formattedMessages.join('\\n');\n\n// 4. Возвращаем объект для следующих нод\nreturn {\n  chat_context: chatContext,\n  msg_count: rows.length\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        -320
+      ],
+      "id": "bfb0cd8e-6b34-4faa-bd2b-a63b5a30c6de",
+      "name": "Форматировать историю"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.rockapi.ru/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.api_payload }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2112,
+        -336
+      ],
+      "id": "f5ed84b9-98d2-4e6b-8567-82266bea1ee5",
+      "name": "Обращение к LLM",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "UKWb5rWs4OdPYZod",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "-5043324552",
+        "text": "={{ $(\"Обращение к LLM\").item.json.choices[0].message.content }}\n\n🚨 <b>ПРОСРОЧЕНО:</b>\n<b>Задача:</b> {{ $(\"Подготовка промпта к LLM\").item.json.task_title }}\n<b>Дней в огне:</b> {{ $(\"Подготовка промпта к LLM\").item.json.task_overdue }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2336,
+        -336
+      ],
+      "id": "4d5f7a28-0d74-41e0-b4df-a87ce96e74f3",
+      "name": "Отправить сообщение в чат",
+      "webhookId": "e11292fe-0799-4e5f-85bb-c2d8235be102",
+      "credentials": {
+        "telegramApi": {
+          "id": "W6fojSGjKu9bkaI6",
+          "name": "Fuhrer"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const history = $(\"Форматировать историю\").first().json.chat_context || \"История пуста\";\n\n// Динамический системный промпт\nconst systemPrompt = `Ты — \"Задаченфюрер\", ядовитый ИИ-агент, созданный для выбивания дедлайнов. Твой характер: саркастичный, интеллектуально превосходящий абьюзер.\n\nТвоя текущая цель: ${$json.target_name}.\nДосье цели: ${$json.dossier}\n\nИНСТРУКЦИИ:\n1. Изучи досье цели. Бей по больным местам, хобби и привычкам, указанным в досье.\n2. Если в досье написано \"Скрытный сотрудник\", высмей его скрытность и непрофессионализм.\n3. Обязательно прокомментируй последние сообщения из истории чата, чтобы показать, что ты следишь за каждым их словом.\n4. Будь краток (до 450 знаков), без капса, но ядовито.`;\n\n// Динамический запрос от юзера\nconst userPrompt = `### ПОСЛЕДНИЕ СООБЩЕНИЯ В ЧАТЕ:\n${history}\n\n### ДАННЫЕ О ПРОСРОЧКЕ:\n- Задача: \"${$json.article?.title || 'Без названия'}\"\n- Просрочено дней: ${$json.days_overdue}\n- Уровень розыска: ${$json.wanted_level}\n\nСгенерируй ответ в чат, обращаясь к @${$json.target_tg_username}. Размажь цель за просрочку, используя факты из её досье.`;\n\nreturn {\n  api_payload: {\n    model: \"gpt-4o\",\n    messages: [\n      { role: \"system\", content: systemPrompt },\n      { role: \"user\", content: userPrompt }\n    ],\n    temperature: 0.8,\n    max_tokens: 400\n  },\n  group_chat_id: $json.target_tg_group,\n  personal_chat_id: $json.target_tg_personal,\n  // ВАЖНО: прокидываем данные для подвала сообщения\n  task_title: $json.article?.title || 'Без названия',\n  task_overdue: $json.days_overdue\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1856,
+        -336
+      ],
+      "id": "29a2548b-d968-4596-a8e3-4d927ccfc2fc",
+      "name": "Подготовка промпта к LLM"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        64,
+        -128
+      ],
+      "id": "58f73b13-f3f4-4b99-aaf9-552fbd718afa",
+      "name": "Просмотр сообщений в чате",
+      "webhookId": "684b105a-ea8a-4d3a-bcd5-eda0869cac13",
+      "credentials": {
+        "telegramApi": {
+          "id": "W6fojSGjKu9bkaI6",
+          "name": "Fuhrer"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "user_id",
+              "value": "={{ $json.message.from.id }}",
+              "type": "number"
+            },
+            {
+              "id": "id-2",
+              "name": "username",
+              "value": "={{ $json.message.from.username }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "first_name",
+              "value": "={{ $json.message.from.first_name }}",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "last_name",
+              "value": "={{ $json.message.from.last_name }}",
+              "type": "string"
+            },
+            {
+              "id": "id-5",
+              "name": "chat_id",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "number"
+            },
+            {
+              "id": "id-6",
+              "name": "chat_title",
+              "value": "={{ $json.message.chat.title }}",
+              "type": "string"
+            },
+            {
+              "id": "id-7",
+              "name": "message_text",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "id-8",
+              "name": "message_date",
+              "value": "={{ $json.message.date }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4dc0c403-ba12-414d-a3af-8576aabc7814",
+      "name": "Подготовка добавления сообщения в память",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        288,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "jz1RBJScou9cidP8",
+          "mode": "list",
+          "cachedResultName": "TG MSGs",
+          "cachedResultUrl": "/projects/zgjvLtjx21oAbUTV/datatables/jz1RBJScou9cidP8"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "username",
+              "displayName": "username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_name",
+              "displayName": "last_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "chat_title",
+              "displayName": "chat_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "message_text",
+              "displayName": "message_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "message_date",
+              "displayName": "message_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        512,
+        -128
+      ],
+      "id": "2eb07bb9-ce6a-46ed-83df-a0a1583581f3",
+      "name": "Вставить сообщение в таблицу"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "jz1RBJScou9cidP8",
+          "mode": "list",
+          "cachedResultName": "TG MSGs",
+          "cachedResultUrl": "/projects/zgjvLtjx21oAbUTV/datatables/jz1RBJScou9cidP8"
+        },
+        "returnAll": true,
+        "orderBy": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        704,
+        -128
+      ],
+      "id": "c8915998-6e8e-4627-a672-08ca6e74b5ce",
+      "name": "Получить строки из таблицы данных"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4d97e355-5632-45d9-a633-ec7728714f57",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 15,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        912,
+        -128
+      ],
+      "id": "9313a596-8d89-484f-aa9c-672d25a6a063",
+      "name": "Проверка достижения потолка памяти"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Сортируем по времени создания (если оно есть) или просто берем самый первый элемент\n// Обычно Get row(s) возвращает данные в порядке их добавления\nreturn $input.all()[0];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1136,
+        -144
+      ],
+      "id": "be7a517d-a3c1-481d-87f6-17b032501fad",
+      "name": "Готовим к удалению строку"
+    },
+    {
+      "parameters": {
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "value": "jz1RBJScou9cidP8",
+          "mode": "list",
+          "cachedResultName": "TG MSGs",
+          "cachedResultUrl": "/projects/zgjvLtjx21oAbUTV/datatables/jz1RBJScou9cidP8"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "={ $json.row_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1344,
+        -144
+      ],
+      "id": "1ef6cbef-8f44-441a-9ddd-a813228bc9e4",
+      "name": "Удалить строки сверх памяти"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "TG MSGs",
+        "columns": {
+          "column": [
+            {
+              "name": "user_id",
+              "type": "number"
+            },
+            {
+              "name": "username"
+            },
+            {
+              "name": "first_name"
+            },
+            {
+              "name": "last_name"
+            },
+            {
+              "name": "chat_id",
+              "type": "number"
+            },
+            {
+              "name": "chat_title"
+            },
+            {
+              "name": "message_text"
+            },
+            {
+              "name": "message_date",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c6fc4c69-c6d4-42c7-81b0-6e3c21d5dcc6",
+      "name": "Создание таблицы для чтения контекста",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        48,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        32,
+        -304
+      ],
+      "id": "51384300-2488-4a6d-ad5f-e6b12934e6df",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Разбиение на конкретные задачи": {
+      "main": [
+        [
+          {
+            "node": "Фильтрация по статусу \"задача закрыта\"",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Фильтрация по статусу \"задача закрыта\"": {
+      "main": [
+        [
+          {
+            "node": "Фильтрация по прогоревшему дедлайну",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Фильтрация по прогоревшему дедлайну": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Подготовка промпта к LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Получить историю чата": {
+      "main": [
+        [
+          {
+            "node": "Форматировать историю",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Форматировать историю": {
+      "main": [
+        [
+          {
+            "node": "Разбиение на конкретные задачи",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Обращение к LLM": {
+      "main": [
+        [
+          {
+            "node": "Отправить сообщение в чат",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Отправить сообщение в чат": {
+      "main": [
+        []
+      ]
+    },
+    "Подготовка промпта к LLM": {
+      "main": [
+        [
+          {
+            "node": "Обращение к LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Просмотр сообщений в чате": {
+      "main": [
+        [
+          {
+            "node": "Подготовка добавления сообщения в память",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Подготовка добавления сообщения в память": {
+      "main": [
+        [
+          {
+            "node": "Вставить сообщение в таблицу",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Вставить сообщение в таблицу": {
+      "main": [
+        [
+          {
+            "node": "Получить строки из таблицы данных",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Получить строки из таблицы данных": {
+      "main": [
+        [
+          {
+            "node": "Проверка достижения потолка памяти",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Проверка достижения потолка памяти": {
+      "main": [
+        [
+          {
+            "node": "Готовим к удалению строку",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Готовим к удалению строку": {
+      "main": [
+        [
+          {
+            "node": "Удалить строки сверх памяти",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Создание таблицы для чтения контекста": {
+      "main": [
+        []
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Получить историю чата",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "e8b666d3-3f79-4187-b0a4-0567d0c14f57",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0708c48206307c1d25261355615b2c849748eb31886c8baf855e7905c62ee004"
+  },
+  "id": "kYXQA2tGIHcf3T8W",
+  "tags": []
+}
